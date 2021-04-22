@@ -17,8 +17,36 @@ from javax.swing import JMenuItem, JPanel, JScrollPane, JTextArea
 
 __version__ = '0.0.2'
 
+REPORT_TEMPLATE = """----
+## Report {report_id}: {issue_name}
 
-class ReportToTextMenuListener(ActionListener):
+url: {url}
+
+### Background
+
+{issue_background}
+
+### Detail
+
+{issue_detail}
+
+### Requests
+
+{requests}
+"""
+
+REQUEST_TEMPLATE = """#### Request {request_id}
+```
+{request}
+```
+
+```
+{response}
+```
+"""
+
+
+class GenerateReportListener(ActionListener):
     """ActionListener for the Burp context menu."""
 
     def __init__(self, extension, invocation):
@@ -29,17 +57,24 @@ class ReportToTextMenuListener(ActionListener):
         """Invoked when the context menu item is selected."""
 
         output = []
+
         for issue in self.invocation.getSelectedIssues():
-            output.append('----')
-            output.append('## Report %d: %s\n' % (issue.getIssueType(), issue.getIssueName()))
-            output.append('url: %s\n' % issue.getUrl())
-            output.append('### Background\n\n%s\n' % issue.getIssueBackground())
-            output.append('### Detail\n\n%s\n' % issue.getIssueDetail())
-            output.append('### Requests\n')
+            requests = []
             for idx, request in enumerate(issue.getHttpMessages()):
-                output.append('### Request %d\n' % idx)
-                output.append('```\n%s\n```\n' % self.extension._helpers.bytesToString(request.getRequest()))
-                output.append('```\n%s\n```\n' % self.extension._helpers.bytesToString(request.getResponse()))
+                requests.append(REQUEST_TEMPLATE.format(
+                    request_id=idx,
+                    request=self.extension._helpers.bytesToString(request.getRequest()).encode('utf-8', errors='replace'),
+                    response=self.extension._helpers.bytesToString(request.getResponse()).encode('utf-8', errors='replace')
+                ))
+
+            output.append(REPORT_TEMPLATE.format(
+                report_id=issue.getIssueType(),
+                issue_name=issue.getIssueName(),
+                url=issue.getUrl(),
+                issue_background=issue.getIssueBackground(),
+                issue_detail=issue.getIssueDetail(),
+                requests='\n'.join(requests)
+            ))
 
         self.extension.setReportText('\n'.join(output))
 
@@ -81,7 +116,7 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab, FocusListener):
         menuItems = ArrayList()
         if invocation.getInvocationContext() == invocation.CONTEXT_SCANNER_RESULTS:
             menuItem = JMenuItem('Report2text')
-            menuItem.addActionListener(ReportToTextMenuListener(self, invocation))
+            menuItem.addActionListener(GenerateReportListener(self, invocation))
             menuItems.add(menuItem)
         return menuItems
 
@@ -99,6 +134,9 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab, FocusListener):
         """iface FocusListener; reset color on tab focus"""
 
         self._setTabBackground(self.COLOR_BLACK)
+
+    def focusLost(self, event):
+        """iface FocusListener;"""
 
     def setReportText(self, text):
         """set report text"""
