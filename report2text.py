@@ -9,8 +9,8 @@ Burp extension report2text
 """
 
 from burp import IBurpExtender, IContextMenuFactory, ITab
-from java.awt import BorderLayout
-from java.awt.event import ActionListener
+from java.awt import BorderLayout, Color
+from java.awt.event import ActionListener, FocusListener
 from java.util import ArrayList
 from javax.swing import JMenuItem, JPanel, JScrollPane, JTextArea
 
@@ -41,19 +41,24 @@ class ReportToTextMenuListener(ActionListener):
                 output.append('```\n%s\n```\n' % self.extension._helpers.bytesToString(request.getRequest()))
                 output.append('```\n%s\n```\n' % self.extension._helpers.bytesToString(request.getResponse()))
 
+        self.extension.setTabBackground(self.extension.COLOR_RED)
         self.extension.tab_main_text.text = '\n'.join(output)
 
 
-class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
+class BurpExtender(IBurpExtender, IContextMenuFactory, ITab, FocusListener):
     """custom reporting extension implementation"""
 
     def registerExtenderCallbacks(self, callbacks):
         """extension startup"""
 
         # commons
+        self.extension_name = 'Report2text'
+        self.COLOR_RED = Color(0xff6633)
+        self.COLOR_BLACK = Color(0x0)
+
         self._callbacks = callbacks
-        self._callbacks.setExtensionName('Report2text')
         self._helpers = self._callbacks.getHelpers()
+        self._callbacks.setExtensionName(self.extension_name)
 
         # menu
         self._callbacks.registerContextMenuFactory(self)
@@ -63,6 +68,8 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
         self.tab_main_text.editable = False
         self.tab_main_text.setLineWrap(True)
         self.tab_main_text.setWrapStyleWord(True)
+        self.tab_main_text.addFocusListener(self)
+
         self.tab = JPanel(BorderLayout())
         self.tab.add(JScrollPane(self.tab_main_text))
         self._callbacks.addSuiteTab(self)
@@ -89,3 +96,16 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
         """ITab; Passes the UI to burp"""
 
         return self.tab
+
+    def setTabBackground(self, color):
+        """set tab caption background"""
+
+        tabbed_pane = self.getUiComponent().getParent()
+        for idx in range(tabbed_pane.getTabCount()):
+            if tabbed_pane.getTitleAt(idx) == self.extension_name:
+                tabbed_pane.setBackgroundAt(idx, color);
+
+    def focusGained(self, event):
+        """FocusListener; reset color on tab focus"""
+
+        self.setTabBackground(self.COLOR_BLACK)
