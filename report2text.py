@@ -15,6 +15,9 @@ from java.util import ArrayList
 from javax.swing import JMenuItem, JPanel, JScrollPane, JTextArea
 
 
+__version__ = '0.0.1'
+
+
 class ReportToTextMenuListener(ActionListener):
     """ActionListener for the Burp context menu."""
 
