@@ -14,3 +14,7 @@
     * Extension file: path/to/report2text.py
 
 ## Usage
+
+* Select issue in 'Active scans' tab 'Issue activity'
+* Select one or more issues and use 'Report2text' from the context menu
+* Use text report generated to 'Report2text' tab
