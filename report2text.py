@@ -23,7 +23,6 @@ class ReportToTextMenuListener(ActionListener):
 
     def __init__(self, extension, invocation):
         self.extension = extension
-        self.output_widget = extension.tab_main_text
         self.invocation = invocation
 
     def actionPerformed(self, event):
@@ -42,7 +41,7 @@ class ReportToTextMenuListener(ActionListener):
                 output.append('```\n%s\n```\n' % self.extension._helpers.bytesToString(request.getRequest()))
                 output.append('```\n%s\n```\n' % self.extension._helpers.bytesToString(request.getResponse()))
 
-        self.output_widget.text = '\n'.join(output)
+        self.extension.tab_main_text.text = '\n'.join(output)
 
 
 class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
